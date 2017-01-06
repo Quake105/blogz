@@ -14,14 +14,18 @@ class BlogHandler(webapp2.RequestHandler):
         query = Post.all().order('-created')
         return query.fetch(limit=limit, offset=offset)
 
-    def get_posts_by_user(self, user, limit, offset):
+    def get_posts_by_user(self ,user, limit, offset):
         """
             Get all posts by a specific user, ordered by creation date (descending).
             The user parameter will be a User object.
         """
 
+        query = Post.all().filter('author', user).order('-created')
+
+        return query.fetch(limit=limit, offset=offset)
+
         # TODO - filter the query so that only posts by the given user
-        return None
+
 
     def get_user_by_name(self, username):
         """ Get a user object from the db, based on their username """
@@ -88,7 +92,7 @@ class BlogIndexHandler(BlogHandler):
 
         # Fetch posts for all users, or a specific user, depending on request parameters
         if username:
-            user = self.get_user_by_name(username)
+            user = username
             posts = self.get_posts_by_user(user, self.page_size, offset)
         else:
             posts = self.get_posts(self.page_size, offset)
@@ -130,14 +134,14 @@ class NewPostHandler(BlogHandler):
         """ Create a new blog post if possible. Otherwise, return with an error message """
         title = self.request.get("title")
         body = self.request.get("body")
-
+        author = self.user.username
         if title and body:
 
             # create a new Post object and store it in the database
             post = Post(
                 title=title,
                 body=body,
-                author=self.user)
+                author=author)
             post.put()
 
             # get the id of the new post, so we can render the post's page (via the permalink)
@@ -260,10 +264,10 @@ class LoginHandler(BlogHandler):
 
     # TODO - The login code here is mostly set up for you, but there isn't a template to log in
 
-    def render_login_form(self, error=""):
+    def render_login_form(self, error="", error1=""):
         """ Render the login form with or without an error, based on parameters """
         t = jinja_env.get_template("login.html")
-        response = t.render(error=error)
+        response = t.render(error=error, error1=error1)
         self.response.out.write(response)
 
     def get(self):
@@ -282,7 +286,7 @@ class LoginHandler(BlogHandler):
             self.login_user(user)
             self.redirect('/blog/newpost')
         else:
-            self.render_login_form(error="Invalid password")
+            self.render_login_form(error1="Invalid password")
 
 class LogoutHandler(BlogHandler):
 
